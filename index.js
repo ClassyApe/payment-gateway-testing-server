@@ -35,7 +35,7 @@ app.get("/pay", async function (req, res, next) {
   // Initiate a payment
 
   // Transaction amount
-  const amount = req?.body?.amount ?? 100;
+  const amount = req?.query?.amount ;
 
   // User ID is the ID of the user present in our application DB
   let userId = "MUID123";
