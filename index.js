@@ -11,8 +11,8 @@ const app = express();
 
 // UAT environment
 const MERCHANT_ID = "M22XB34TDN5Q1";
-const PHONE_PE_HOST_URL = "	https://api.phonepe.com/apis/hermes"; 
-const SALT_INDEX = 2;
+const PHONE_PE_HOST_URL = "https://api.phonepe.com/apis/hermes"; 
+const SALT_INDEX = 1;
 const SALT_KEY = "8c830028-50de-41ae-b5f7-c5493ee53ced";
 const APP_BE_URL = "https://classy-payments-dev.netlify.app"; // our application
 
