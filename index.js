@@ -14,7 +14,7 @@ const MERCHANT_ID = "PGTESTPAYUAT86";
 const PHONE_PE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
 const SALT_INDEX = 1;
 const SALT_KEY = "96434309-7796-489d-8924-ab56988a6076";
-const APP_BE_URL = "http://localhost:3002"; // our application
+const APP_BE_URL = "https://classy-payments-dev.netlify.app"; // our application
 
 // setting up middleware
 app.use(cors());
