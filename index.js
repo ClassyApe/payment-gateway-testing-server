@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
 });
 
 // endpoint to initiate a payment
-app.post("/pay", async function (req, res, next) {
+app.get("/pay", async function (req, res, next) {
   // Initiate a payment
 
   // Transaction amount
