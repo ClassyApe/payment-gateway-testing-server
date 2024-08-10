@@ -10,10 +10,10 @@ const uniqid = require("uniqid");
 const app = express();
 
 // UAT environment
-const MERCHANT_ID = "M22XB34TDN5Q1";
-const PHONE_PE_HOST_URL = "https://api.phonepe.com/apis/hermes"; 
+const MERCHANT_ID = "PGTESTPAYUAT86";
+const PHONE_PE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
 const SALT_INDEX = 1;
-const SALT_KEY = "8c830028-50de-41ae-b5f7-c5493ee53ced";
+const SALT_KEY = "96434309-7796-489d-8924-ab56988a6076";
 const APP_BE_URL = "https://classy-payments-dev.netlify.app"; // our application
 
 // setting up middleware
@@ -35,7 +35,7 @@ app.get("/pay", async function (req, res, next) {
   // Initiate a payment
 
   // Transaction amount
-  const amount = req?.body?.amount ?? 200;
+  const amount = req?.query?.amount || 200;
 
   // User ID is the ID of the user present in our application DB
   let userId = "MUID123";
