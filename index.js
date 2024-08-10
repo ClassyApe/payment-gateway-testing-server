@@ -33,12 +33,16 @@ app.get("/", (req, res) => {
 // endpoint to initiate a payment
 app.get("/pay", async function (req, res, next) {
   // Initiate a payment
-
+  const {user_id, amount, phone, name, email} = req.query;
   // Transaction amount
-  const amount = req?.query?.amount || 200;
-
+ // Set the values to variables for later use
+ this.name = name;
+ this.email = email;
+ this.userId = user_id;
+ this.phone = phone;
+ this.amount=amount;
   // User ID is the ID of the user present in our application DB
-  let userId = "MUID123";
+
 
   // Generate a unique merchant transaction ID for each transaction
   let merchantTransactionId = uniqid();
@@ -48,12 +52,12 @@ app.get("/pay", async function (req, res, next) {
     merchantId: MERCHANT_ID, //* PHONEPE_MERCHANT_ID . Unique for each account (private)
     merchantTransactionId: merchantTransactionId,
     merchantUserId: userId,
-    amount: amount * 100, // converting to paise
+    amount: amount * 100 ?? 100, // converting to paise
     redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
     redirectMode: "REDIRECT",
-    mobileNumber: "9999999999",
-    name:"kidd",
-    email:'test@gmail.com',
+    mobileNumber: phone,
+    name:name,
+    email:email,
     paymentInstrument: {
       type: "PAY_PAGE",
     },
