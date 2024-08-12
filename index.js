@@ -119,9 +119,27 @@ app.get("/payment/validate/:merchantTransactionId", async function (req, res) {
           accept: "application/json",
         },
       })
-      .then(function (response) {
+      .then(async function (response) {
         console.log("response->", response.data);
-        if (response.data && response.data.code === "PAYMENT_SUCCESS") {
+        if (response.data ) {
+          const headers = {
+            Authorization: `Bearer ${req.query.token}`,
+            "Content-Type": "application/json",
+          };
+    
+          const body = {
+            voucherId: req.query.voucherId,
+            contactId: req.query.userId,
+            amount: req.query.amount,
+            contactEmail: req.query.email,
+            contactMobile: req.query.phone,
+          };
+    
+          await axios.post(
+            'https://aslam-aisha-dev-ed.my.salesforce.com/services/apexrest/purchaseVoucher',
+            body,
+            { headers }
+          );
           // redirect to FE payment success status page
           res.send(response.data);
         } else {
