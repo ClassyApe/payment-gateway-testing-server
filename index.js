@@ -1,4 +1,4 @@
-// importing modules
+// Importing modules
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -6,78 +6,63 @@ const axios = require("axios");
 const sha256 = require("sha256");
 const uniqid = require("uniqid");
 
-// creating express application
+// Creating express application
 const app = express();
 
-// UAT environment
-const MERCHANT_ID = "PGTESTPAYUAT86";
-const PHONE_PE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
+// UAT environment variables
+const MERCHANT_ID = "M22XB34TDN5Q1";
+const PHONE_PE_HOST_URL = "https://api.phonepe.com/apis/hermes"; 
 const SALT_INDEX = 1;
-const SALT_KEY = "96434309-7796-489d-8924-ab56988a6076";
-const APP_BE_URL = "https://classy-payments-dev.netlify.app"; // our application
+const SALT_KEY = "8c830028-50de-41ae-b5f7-c5493ee53ced";
+const APP_BE_URL = "https://classypayments.com/"; // Our application
 
-// setting up middleware
+// Setting up middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(
-  bodyParser.urlencoded({
-    extended: false,
-  })
-);
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // Defining a test route
 app.get("/", (req, res) => {
   res.send("PhonePe Integration APIs!");
 });
 
-// endpoint to initiate a payment
-app.get("/pay", async function (req, res, next) {
-  // Initiate a payment
-  const {user_id, amount, phone, name, email} = req.query;
-  // Transaction amount
- // Set the values to variables for later use
- this.name = name;
- this.email = email;
- this.userId = user_id;
- this.phone = phone;
- this.amount=amount;
-  // User ID is the ID of the user present in our application DB
+// Endpoint to initiate a payment
+app.get("/pay", async (req, res, next) => {
+  try {
+    // Transaction details
+    const amount = req.query.amount ? parseInt(req.query.amount) : 100;
+    const userId = req.query.userId || "MUID123";
+    const mobileNumber = req.query.mobileNumber || "99999999";
+    const name = req.query.name || "test1";
+    const email = req.query.email || "test@gmail.com";
 
+    // Generate a unique merchant transaction ID for each transaction
+    const merchantTransactionId = uniqid();
 
-  // Generate a unique merchant transaction ID for each transaction
-  let merchantTransactionId = uniqid();
+    // Payment payload
+    const normalPayLoad = {
+      merchantId: MERCHANT_ID,
+      merchantTransactionId,
+      merchantUserId: userId,
+      amount: amount * 100, // converting to paise
+      redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
+      redirectMode: "REDIRECT",
+      mobileNumber,
+      name,
+      email,
+      paymentInstrument: { type: "PAY_PAGE" },
+    };
 
-  // redirect url => phonePe will redirect the user to this url once payment is completed. It will be a GET request, since redirectMode is "REDIRECT"
-  let normalPayLoad = {
-    merchantId: MERCHANT_ID, //* PHONEPE_MERCHANT_ID . Unique for each account (private)
-    merchantTransactionId: merchantTransactionId,
-    merchantUserId: userId,
-    amount: amount * 100 ?? 100, // converting to paise
-    redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
-    redirectMode: "REDIRECT",
-    mobileNumber: phone,
-    name:name,
-    email:email,
-    paymentInstrument: {
-      type: "PAY_PAGE",
-    },
-  };
+    // Create base64 encoded payload
+    const base64EncodedPayload = Buffer.from(JSON.stringify(normalPayLoad), "utf8").toString("base64");
 
-  // make base64 encoded payload
-  let bufferObj = Buffer.from(JSON.stringify(normalPayLoad), "utf8");
-  let base64EncodedPayload = bufferObj.toString("base64");
+    // Create X-VERIFY header
+    const xVerifyChecksum = sha256(base64EncodedPayload + "/pg/v1/pay" + SALT_KEY) + "###" + SALT_INDEX;
 
-  // X-VERIFY => SHA256(base64EncodedPayload + "/pg/v1/pay" + SALT_KEY) + ### + SALT_INDEX
-  let string = base64EncodedPayload + "/pg/v1/pay" + SALT_KEY;
-  let sha256_val = sha256(string);
-  let xVerifyChecksum = sha256_val + "###" + SALT_INDEX;
-
-  axios
-    .post(
+    // Send payment request
+    const response = await axios.post(
       `${PHONE_PE_HOST_URL}/pg/v1/pay`,
-      {
-        request: base64EncodedPayload,
-      },
+      { request: base64EncodedPayload },
       {
         headers: {
           "Content-Type": "application/json",
@@ -85,55 +70,69 @@ app.get("/pay", async function (req, res, next) {
           accept: "application/json",
         },
       }
-    )
-    .then(function (response) {
-      console.log("response->", JSON.stringify(response.data));
-      res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
-    })
-    .catch(function (error) {
-      res.send(error);
-    });
+    );
+
+    // Redirect to PhonePe payment page
+    res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
+  } catch (error) {
+    console.error("Payment initiation error:", error);
+    res.status(500).send("Payment initiation failed.");
+  }
 });
 
-// endpoint to check the status of payment
-app.get("/payment/validate/:merchantTransactionId", async function (req, res) {
+// Endpoint to check the status of payment
+app.get("/payment/validate/:merchantTransactionId", async (req, res) => {
   const { merchantTransactionId } = req.params;
-  // check the status of the payment using merchantTransactionId
-  if (merchantTransactionId) {
-    let statusUrl =
-      `${PHONE_PE_HOST_URL}/pg/v1/status/${MERCHANT_ID}/` +
-      merchantTransactionId;
 
-    // generate X-VERIFY
-    let string =
-      `/pg/v1/status/${MERCHANT_ID}/` + merchantTransactionId + SALT_KEY;
-    let sha256_val = sha256(string);
-    let xVerifyChecksum = sha256_val + "###" + SALT_INDEX;
+  if (!merchantTransactionId) {
+    return res.status(400).send("Missing merchantTransactionId");
+  }
 
-    axios
-      .get(statusUrl, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-VERIFY": xVerifyChecksum,
-          "X-MERCHANT-ID": merchantTransactionId,
-          accept: "application/json",
-        },
-      })
-      .then(function (response) {
-        console.log("response->", response.data);
-        if (response.data && response.data.code === "PAYMENT_SUCCESS") {
-          // redirect to FE payment success status page
-          res.send(response.data);
-        } else {
-          // redirect to FE payment failure / pending status page
-        }
-      })
-      .catch(function (error) {
-        // redirect to FE payment failure / pending status page
-        res.send(error);
-      });
-  } else {
-    res.send("Sorry!! Error");
+  try {
+    const statusUrl = `${PHONE_PE_HOST_URL}/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}`;
+
+    // Create X-VERIFY header
+    const xVerifyChecksum = sha256(`/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}${SALT_KEY}`) + "###" + SALT_INDEX;
+
+    // Send status check request
+    const response = await axios.get(statusUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-VERIFY": xVerifyChecksum,
+        accept: "application/json",
+      },
+    });
+
+    console.log("Payment status response:", response.data);
+
+    if (response.data && response.data.code === "PAYMENT_SUCCESS") {
+      // Call the Salesforce API if payment is successful
+      const headers = {
+        Authorization: `Bearer ${req.query.token}`,
+        "Content-Type": "application/json",
+      };
+
+      const body = {
+        voucherId: req.query.voucherId,
+        contactId: req.query.userId,
+        amount: req.query.amount,
+        contactEmail: req.query.email,
+        contactMobile: req.query.phone,
+      };
+
+      await axios.post(
+        'https://aslam-aisha-dev-ed.my.salesforce.com/services/apexrest/purchaseVoucher',
+        body,
+        { headers }
+      );
+
+      res.send(response.data);
+    } else {
+      res.status(200).send("Payment failed or pending.");
+    }
+  } catch (error) {
+    console.error("Payment status check error:", error);
+    res.status(500).send("Payment status check failed.");
   }
 });
 
