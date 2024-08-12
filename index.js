@@ -29,12 +29,13 @@ app.get("/", (req, res) => {
 // Endpoint to initiate a payment
 app.get("/pay", async (req, res, next) => {
   try {
-    // Transaction details
-    const amount = req.query.amount ? parseInt(req.query.amount) : 100;
-    const userId = req.query.userId || "MUID123";
-    const mobileNumber = req.query.mobileNumber || "99999999";
-    const name = req.query.name || "test1";
-    const email = req.query.email || "test@gmail.com";
+    const {
+      amount = 100,
+      userId = "MUID123",
+      mobileNumber = "99999999",
+      name = "test1",
+      email = "test@gmail.com",
+    } = req.query;
 
     // Generate a unique merchant transaction ID for each transaction
     const merchantTransactionId = uniqid();
@@ -44,7 +45,7 @@ app.get("/pay", async (req, res, next) => {
       merchantId: MERCHANT_ID,
       merchantTransactionId,
       merchantUserId: userId,
-      amount: amount * 100, // converting to paise
+      amount: parseInt(amount) * 100, // converting to paise
       redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       redirectMode: "REDIRECT",
       mobileNumber,
@@ -72,11 +73,15 @@ app.get("/pay", async (req, res, next) => {
       }
     );
 
-    // Redirect to PhonePe payment page
-    res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
+    // Check if the response has the expected structure
+    if (response.data && response.data.data && response.data.data.instrumentResponse) {
+      res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
+    } else {
+      throw new Error("Unexpected response structure from PhonePe API");
+    }
   } catch (error) {
-    console.error("Payment initiation error:", error);
-    res.status(500).send("Payment initiation failed.");
+    console.error("Payment initiation error:", error.message);
+    res.status(500).json({ message: "Payment initiation failed.", error: error.message });
   }
 });
 
@@ -85,7 +90,7 @@ app.get("/payment/validate/:merchantTransactionId", async (req, res) => {
   const { merchantTransactionId } = req.params;
 
   if (!merchantTransactionId) {
-    return res.status(400).send("Missing merchantTransactionId");
+    return res.status(400).json({ message: "Missing merchantTransactionId" });
   }
 
   try {
@@ -106,33 +111,16 @@ app.get("/payment/validate/:merchantTransactionId", async (req, res) => {
     console.log("Payment status response:", response.data);
 
     if (response.data && response.data.code === "PAYMENT_SUCCESS") {
-      // Call the Salesforce API if payment is successful
-      const headers = {
-        Authorization: `Bearer ${req.query.token}`,
-        "Content-Type": "application/json",
-      };
-
-      const body = {
-        voucherId: req.query.voucherId,
-        contactId: req.query.userId,
-        amount: req.query.amount,
-        contactEmail: req.query.email,
-        contactMobile: req.query.phone,
-      };
-
-      await axios.post(
-        'https://aslam-aisha-dev-ed.my.salesforce.com/services/apexrest/purchaseVoucher',
-        body,
-        { headers }
-      );
-
-      res.send(response.data);
+      // Payment is successful
+      res.json(response.data);
+    } else if (response.data && response.data.code) {
+      res.status(200).json({ message: "Payment failed or pending.", statusCode: response.data.code });
     } else {
-      res.status(200).send("Payment failed or pending.");
+      throw new Error("Unexpected response structure from PhonePe API");
     }
   } catch (error) {
-    console.error("Payment status check error:", error);
-    res.status(500).send("Payment status check failed.");
+    console.error("Payment status check error:", error.message);
+    res.status(500).json({ message: "Payment status check failed.", error: error.message });
   }
 });
 
