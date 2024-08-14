@@ -29,11 +29,9 @@ app.get("/", (req, res) => {
 app.post("/pay",(req,res)=>{
     try {
     const {
-      amount = 100,
-      userId = "MUID123",
+      amount,
+      userId ,
       mobileNumber = "99999999",
-      name = "test1",
-      email = "test@gmail.com",
     } = req.body;
         // Generate a unique merchant transaction ID for each transaction
     const merchantTransactionId = uniqid();
@@ -42,8 +40,8 @@ app.post("/pay",(req,res)=>{
     const normalPayLoad = {
       merchantId: MERCHANT_ID,
       merchantTransactionId,
-      merchantUserId: userId,
-      amount: parseInt(amount) * 100, // converting to paise
+      merchantUserId: userId ?? MUID123,
+      amount: parseInt(amount) * 100 ?? 100, // converting to paise
       redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       callback :`${APP_BE_URL}`,
       redirectMode: "POST",
