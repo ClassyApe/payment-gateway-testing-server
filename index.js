@@ -40,7 +40,7 @@ app.post("/pay",(req,res)=>{
     const normalPayLoad = {
       merchantId: MERCHANT_ID,
       merchantTransactionId,
-      merchantUserId: userId ?? 'MUID123',
+      merchantUserId: userId,
       amount: parseInt(amount) * 100 ?? 100, // converting to paise
       redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       callback :`${APP_BE_URL}`,
