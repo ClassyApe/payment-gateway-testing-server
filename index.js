@@ -49,8 +49,6 @@ app.get("/pay", async (req, res, next) => {
       redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       redirectMode: "REDIRECT",
       mobileNumber,
-      name,
-      email,
       paymentInstrument: { type: "PAY_PAGE" },
     };
 
@@ -59,7 +57,6 @@ app.get("/pay", async (req, res, next) => {
 
     // Create X-VERIFY header
     const xVerifyChecksum = sha256(base64EncodedPayload + "/pg/v1/pay" + SALT_KEY) + "###" + SALT_INDEX;
-
     // Send payment request
     const response = await axios.post(
       `${PHONE_PE_HOST_URL}/pg/v1/pay`,
@@ -75,7 +72,7 @@ app.get("/pay", async (req, res, next) => {
 
     // Check if the response has the expected structure
     if (response.data && response.data.data && response.data.data.instrumentResponse) {
-      res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
+      res.status(200).redirect(response.data.data.instrumentResponse.redirectInfo.url);
     } else {
       throw new Error("Unexpected response structure from PhonePe API");
     }
