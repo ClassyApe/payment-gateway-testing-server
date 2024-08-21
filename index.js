@@ -10,15 +10,10 @@ const uniqid = require("uniqid");
 const app = express();
 
 // UAT environment variables
-const MERCHANT_ID = "PGTESTPAYUAT86";
-const PHONE_PE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
+const MERCHANT_ID = "M22XB34TDN5Q1";
+const PHONE_PE_HOST_URL = "https://api.phonepe.com/apis/hermes"; 
 const SALT_INDEX = 1;
-const SALT_KEY = "96434309-7796-489d-8924-ab56988a6076";
-// const MERCHANT_ID = "M22XB34TDN5Q1";
-// const PHONE_PE_HOST_URL = "https://api.phonepe.com/apis/hermes"; 
-const TEST = 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-// const SALT_INDEX = 1;
-// const SALT_KEY = "8c830028-50de-41ae-b5f7-c5493ee53ced";
+const SALT_KEY = "8c830028-50de-41ae-b5f7-c5493ee53ced";
 const APP_BE_URL = "https://classypayments.com"; // our application
 
 // Setting up middleware
@@ -61,7 +56,7 @@ app.post("/pay",(req,res)=>{
     // Send payment request
     const options = {
       method: "POST",
-      url: `${TEST}/pg/v1/pay`,
+      url: URL,
       data:{
         request: base64EncodedPayload,
       },
@@ -98,7 +93,7 @@ app.get("/payment/validate/:merchantTransactionId", async (req, res) => {
   }
 
   try {
-    const statusUrl = `${TEST}/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}`;
+    const statusUrl = `${PHONE_PE_HOST_URL}/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}`;
 
     // Create X-VERIFY header
     const xVerifyChecksum = sha256(`/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}${SALT_KEY}`) + "###" + SALT_INDEX;
