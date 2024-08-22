@@ -40,7 +40,6 @@ app.post("/pay",(req,res)=>{
       amount: parseInt(amount) * 100 , // converting to paise
       redirectUrl: `${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       redirectMode: "POST",
-      callbackUrl :`${APP_BE_URL}/payment/validate/${merchantTransactionId}`,
       mobileNumber:req?.body?.data?.mobileNumber,
       paymentInstrument: { type: "PAY_PAGE" },
     };
@@ -51,7 +50,7 @@ app.post("/pay",(req,res)=>{
     // Create X-VERIFY header
     const xVerifyChecksum = sha256(base64EncodedPayload + "/pg/v1/pay" + SALT_KEY) + "###" + SALT_INDEX;
   ;
-    const URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
+    const URL = `${PHONE_PE_HOST_URL}/pg/v1/pay`;
     // const URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay"
     // Send payment request
     const options = {
@@ -87,26 +86,24 @@ app.post("/pay",(req,res)=>{
 // Endpoint to check the status of payment
 app.get("/payment/validate/:merchantTransactionId", async (req, res) => {
   const { merchantTransactionId } = req.params;
-
+console.log(req.params,"params")
   if (!merchantTransactionId) {
     return res.status(400).json({ message: "Missing merchantTransactionId" });
   }
 
   try {
     const statusUrl = `${PHONE_PE_HOST_URL}/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}`;
-
     // Create X-VERIFY header
     const xVerifyChecksum = sha256(`/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}${SALT_KEY}`) + "###" + SALT_INDEX;
-
     // Send status check request
     const response = await axios.get(statusUrl, {
       headers: {
         "Content-Type": "application/json",
         "X-VERIFY": xVerifyChecksum,
         accept: "application/json",
+        "X-MERCHANT-ID":MERCHANT_ID,
       },
     });
-
     console.log("Payment status response:", response.data);
 
     if (response.data && response.data.code === "PAYMENT_SUCCESS") {
